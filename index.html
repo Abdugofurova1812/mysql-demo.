@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MySQL demo</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 520px; margin: 40px auto; padding: 0 16px; }
+    form { display: flex; gap: 8px; }
+    input { flex: 1; padding: 8px 10px; font-size: 16px; }
+    button { padding: 8px 14px; font-size: 16px; cursor: pointer; }
+    ul { padding-left: 18px; }
+    li { margin: 6px 0; }
+    .err { color: #b00020; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Ismingizni qoldiring</h1>
+  <form id="f">
+    <input id="name" placeholder="Ism" maxlength="100" required />
+    <button type="submit">Saqlash</button>
+  </form>
+  <p class="err" id="err"></p>
+  <ul id="list"></ul>
+
+  <script>
+    const list = document.getElementById('list');
+    const err = document.getElementById('err');
+
+    async function load() {
+      err.textContent = '';
+      const res = await fetch('/api/notes');
+      const data = await res.json();
+      if (!res.ok) { err.textContent = data.error || 'Xatolik'; return; }
+      list.innerHTML = data.map(r =>
+        <li>${escapeHtml(r.name)} <small>(${new Date(r.created_at).toLocaleString()})</small></li>
+      ).join('');
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    document.getElementById('f').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('name');
+      const name = input.value.trim();
+      if (!name) return;
+      const res = await fetch('/api/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      const data = await res.json();
+      if (!res.ok) { err.textContent = data.error || 'Xatolik'; return; }
+      input.value = '';
+      load();
+    });
+
+    load();
+  </script>
+</body>
+</html>
