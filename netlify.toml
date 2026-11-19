@@ -2,7 +2,9 @@
   publish = "."
   functions = "netlify/functions"
 
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/api"
-  status = 200
+# The API function declares its own route (/api/*) via `export const config`
+# in netlify/functions/api.mjs, so no redirect is needed here.
+
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = ["mysql2"]

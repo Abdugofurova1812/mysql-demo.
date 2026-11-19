@@ -27,14 +27,23 @@
     const list = document.getElementById('list');
     const err = document.getElementById('err');
 
+    async function readJson(res) {
+      const text = await res.text();
+      try { return JSON.parse(text); } catch { return { error: text || res.statusText }; }
+    }
+
     async function load() {
       err.textContent = '';
-      const res = await fetch('/api/notes');
-      const data = await res.json();
-      if (!res.ok) { err.textContent = data.error || 'Xatolik'; return; }
-      list.innerHTML = data.map(r =>
-        <li>${escapeHtml(r.name)} <small>(${new Date(r.created_at).toLocaleString()})</small></li>
-      ).join('');
+      try {
+        const res = await fetch('/api/notes');
+        const data = await readJson(res);
+        if (!res.ok) { err.textContent = data.error || 'Xatolik'; return; }
+        list.innerHTML = data.map(r =>
+          `<li>${escapeHtml(r.name)} <small>(${new Date(r.created_at).toLocaleString()})</small></li>`
+        ).join('');
+      } catch (e) {
+        err.textContent = 'Serverga ulanib bo\'lmadi';
+      }
     }
 
     function escapeHtml(s) {
@@ -46,14 +55,24 @@
       const input = document.getElementById('name');
       const name = input.value.trim();
       if (!name) return;
-      const res = await fetch('/api/notes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name })
-      });
-      const data = await res.json();
-      if (!res.ok) { err.textContent = data.error || 'Xatolik'; return; }
-      input.value = '';
+      const btn = e.submitter || document.querySelector('#f button');
+      btn.disabled = true;
+      err.textContent = '';
+      try {
+        const res = await fetch('/api/notes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name })
+        });
+        const data = await readJson(res);
+        if (!res.ok) { err.textContent = data.error || 'Xatolik'; return; }
+        input.value = '';
+      } catch (e) {
+        err.textContent = 'Serverga ulanib bo\'lmadi';
+        return;
+      } finally {
+        btn.disabled = false;
+      }
       load();
     });
 
